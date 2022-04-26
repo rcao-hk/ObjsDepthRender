@@ -23,6 +23,12 @@ class BaseOptions():
         parser.add_argument('--logs_dir', type=str, default='./logs', help='the path to save Logs')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
 
+        parser.add_argument('--camera', type=str, default='realsense', help='type of camera, kinect or realsense')
+        parser.add_argument('--depth_scale', type=int, default=1, help='depth scale of camera')
+
+        parser.add_argument('--root_path', type=str, default='E:/Datasets/LineMod/Linemod_preprocessed/data/', help='path to the root folder')
+        parser.add_argument('--output_path', type=str, default='E:/Datasets/LineMod/Linemod_preprocessed/Synthetic/02/', help='path to the output folder')
+
         self.initialized = True
         return parser
 
