@@ -26,6 +26,8 @@ class BaseOptions():
         parser.add_argument('--dataset', type=str, default='linemod', help='name of datase, linemod or graspnet')
         parser.add_argument('--camera', type=str, default='realsense', help='type of camera, kinect or realsense')
         parser.add_argument('--depth_scale', type=int, default=1, help='depth scale of camera')
+        parser.add_argument('--output_width', type=int, default=640, help='640 for linemod and 1280 for graspnet')
+        parser.add_argument('--output_height', type=int, default=480, help='480 for linemod and 720 for graspnet')
 
         parser.add_argument('--root_path', type=str, default='E:/Datasets/LineMod/Linemod_preprocessed/data/', help='path to the root folder')
         parser.add_argument('--output_path', type=str, default='E:/Datasets/LineMod/Linemod_preprocessed/Synthetic/02/', help='path to the output folder')

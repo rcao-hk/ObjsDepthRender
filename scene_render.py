@@ -46,14 +46,15 @@ def add_table_mesh(meshes_list, trans=np.array([None]), scale=1.):
     meshes_list.append(table_mesh)
     return meshes_list
 
-def depth_render(meshes_list, cam_param, output_name='Data/test', depth_scale=1000, is_offscreen=False):
+def depth_render(meshes_list, cam_param, output_name='Data/test',
+                depth_scale=1000, width=1280, height=720, is_offscreen=False):
     if is_offscreen:
-        vis = o3d.visualization.rendering.OffscreenRenderer(width=640, height=480)
+        vis = o3d.visualization.rendering.OffscreenRenderer(width=width, height=height)
         vis.setup_camera(cam_param.intrinsic, cam_param.extrinsic)
         vis.scene.set_lighting(o3d.visualization.rendering.Open3DScene.LightingProfile.NO_SHADOWS, np.array([0, 0, -1]))
     else:
         vis = o3d.visualization.Visualizer()
-        vis.create_window(width=640, height=480, visible=False)
+        vis.create_window(width=width, height=height, visible=False)
         ctr = vis.get_view_control()
 
     if is_offscreen:
@@ -68,7 +69,8 @@ def depth_render(meshes_list, cam_param, output_name='Data/test', depth_scale=10
     depth_name_offscreen = output_name + '_depth.tif'
     rgb_name = output_name + '_rgb.png'
     if is_offscreen:
-        depth_image = vis.render_to_depth_image()   # Pixels range from 0 (near plane) to 1 (far plane); different from commonly used depth map
+        depth_image = vis.render_to_depth_image()   # Pixels range from 0 (near plane) to 1 (far plane); 
+                                                    # different from commonly used depth map
         depth_image_np = np.asarray(depth_image) * depth_scale
         depth_image_np = depth_image_np.astype(np.uint16)
         depth_image_pil = Image.fromarray(depth_image_np)
@@ -83,7 +85,8 @@ def depth_render(meshes_list, cam_param, output_name='Data/test', depth_scale=10
         vis.capture_depth_image(depth_name, do_render=False, depth_scale=depth_scale)
         vis.capture_screen_image(rgb_name, do_render=False)
 
-def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/test', depth_scale=1000, is_offscreen=False):
+def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/test',
+                depth_scale=1000, width=1280, height=720, is_offscreen=False):
     if is_offscreen:
         vis = o3d.visualization.rendering.OffscreenRenderer(width=640, height=480)
         vis.setup_camera(cam_param.intrinsic, cam_param.extrinsic)
@@ -119,7 +122,9 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
         vis.poll_events()
         vis.capture_screen_image(label_name, do_render=False)
 
-def scene_render_linemod(meshes_path, meshes_name, scene_path, output_path='Data/', depth_scale=1000, is_table=True, is_offscreen=False):
+def scene_render_linemod(meshes_path, meshes_name, scene_path, output_path='Data/', 
+                        depth_scale=1000, output_width=640, output_height=480,
+                        is_table=True, is_offscreen=False):
     poses_path = scene_path + 'gt.yml'
     intrinsic_path = scene_path + 'info.yml'
     
@@ -162,7 +167,8 @@ def scene_render_linemod(meshes_path, meshes_name, scene_path, output_path='Data
     #                    intrinsic_mat[0], intrinsic_mat[4], 
     #                    intrinsic_shape[1] / 2 - 0.5, intrinsic_shape[0] / 2 - 0.5]
     intrinsic_param = [intrinsic_shape[1], intrinsic_shape[0],
-                       (intrinsic_mat[0] / (intrinsic_mat[2] * 2)) * intrinsic_shape[1], (intrinsic_mat[4] / (intrinsic_mat[2] * 2)) * intrinsic_shape[1], 
+                       (intrinsic_mat[0] / (intrinsic_mat[2] * 2)) * intrinsic_shape[1],
+                       (intrinsic_mat[4] / (intrinsic_mat[2] * 2)) * intrinsic_shape[1], 
                        intrinsic_shape[1] / 2 - 0.5, intrinsic_shape[0] / 2 - 0.5]
 
     cam_param = vis_utils.get_camera_parameters(intrinsic_mat=intrinsic_param)
@@ -176,10 +182,14 @@ def scene_render_linemod(meshes_path, meshes_name, scene_path, output_path='Data
 
         output_name = output_path + str(i_img)
         # mesh_utils.write_meshes(output_name + '.obj', meshes_transed)
-        depth_render(meshes_transed, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
-        label_render(meshes_transed, meshes_transed_labels_list, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
+        depth_render(meshes_transed, cam_param, output_name=output_name,
+                    depth_scale=depth_scale, width=output_width, height=output_height, is_offscreen=is_offscreen)
+        label_render(meshes_transed, meshes_transed_labels_list, cam_param, output_name=output_name,
+                    depth_scale=depth_scale, width=output_width, height=output_height, is_offscreen=is_offscreen)
 
-def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Data/', camera='kinect', depth_scale=1000, is_table=True, is_offscreen=False):
+def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Data/', camera='kinect',
+                        depth_scale=1000, output_width=1280, output_height=720,
+                        is_table=True, is_offscreen=False):
     poses_paths = os.listdir(scene_path + 'meta/')
     cam_pos = np.load(scene_path + 'cam0_wrt_table.npy')
     extrinsic_mat = np.linalg.inv(cam_pos).tolist()
@@ -222,28 +232,35 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
 
         # o3d.visualization.draw_geometries(meshes_list)
         output_name = output_path + pose_idx
-        depth_render(meshes_transed, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
-        label_render(meshes_transed, meshes_labels_list, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
+        depth_render(meshes_transed, cam_param, output_name=output_name,
+                    depth_scale=depth_scale, width=output_width, height=output_height, is_offscreen=is_offscreen)
+        label_render(meshes_transed, meshes_labels_list, cam_param, output_name=output_name,
+                    depth_scale=depth_scale, width=output_width, height=output_height, is_offscreen=is_offscreen)
 
         print('    Image: %d, number of meshes: %d'%(i_img, num_meshes))
 
 def data_generation(opt):
     scene_list = os.listdir(opt.root_path)
 
-    # # linear processing
+    # linear processing
     for i_scene in range(len(scene_list)):
         scene_path = opt.root_path + scene_list[i_scene] + '/'
         output_path = opt.output_path + scene_list[i_scene] + '/'
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         if opt.dataset == 'linemod':
-            scene_render_linemod(opt.meshes_path, opt.meshes_name, scene_path, output_path, opt.depth_scale, opt.is_table, opt.is_offscreen)
+            scene_render_linemod(opt.meshes_path, opt.meshes_name, scene_path, output_path, 
+                                opt.depth_scale, opt.output_width, opt.output_height,
+                                opt.is_table, opt.is_offscreen)
         elif opt.dataset == 'graspnet':
-            scene_render_graspnet(opt.meshes_path, opt.meshes_name, scene_path, output_path, opt.camera, opt.depth_scale, opt.is_table, opt.is_offscreen)
+            scene_render_graspnet(opt.meshes_path, opt.meshes_name, scene_path, output_path,
+                                opt.camera, opt.depth_scale, opt.output_width, opt.output_height,
+                                opt.is_table, opt.is_offscreen)
 if __name__ == '__main__':
     opt = SceneRenderOptions().parse()
 
     # test scene render
-    scene_render_linemod(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path, depth_scale=opt.depth_scale, is_table=opt.is_table)
+    scene_render_linemod(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path,
+                        depth_scale=opt.depth_scale, is_table=opt.is_table)
 
     # data_generation(opt)
