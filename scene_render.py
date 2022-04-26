@@ -12,63 +12,9 @@ import open3d as o3d
 from tqdm import tqdm
 
 from options.scene_render_options import SceneRenderOptions
-from utils import utils, mesh_utils, vis_utils
+from utils import mesh_utils, vis_utils
 
-def mat_homog(R_mat, T_mat=np.array([0., 0., 0.])):
-    R_mat = np.reshape(R_mat, (3, 3))
-    homog_term = np.array([[T_mat[0]], [T_mat[1]], [T_mat[2]]])
-    pose = np.concatenate((R_mat, homog_term), axis=1)
-    homog_term = np.array([[0., 0., 0., 1.]])
-    pose = np.concatenate((pose, homog_term), axis=0)
-    return pose
-
-def meshes_place(meshes, meshes_labels_list, poses, is_table=True):
-    meshes_list = []
-    transed_labels_list = []
-
-    if is_table:
-        ref_id = 0
-        bias = -6
-        # translate table
-        temp_vertices = np.asarray(meshes[ref_id].vertices)
-        temp_vertices_z = temp_vertices[:, 2]
-        min_z = np.min(temp_vertices_z)
-
-        table_mesh = deepcopy(meshes[-1])
-        table_mesh = table_mesh.translate((0., 0., min_z + bias))
-
-        # transfrom table same with the ref model
-        R_mat = np.array(poses[ref_id]['cam_R_m2c'])
-        T_mat = poses[ref_id]['cam_t_m2c']
-        pose = mat_homog(R_mat, T_mat)
-        table_mesh = table_mesh.transform(pose)
-
-        meshes_list.append(table_mesh)
-        transed_labels_list.append(meshes_labels_list[0])
-
-    for i_pose in range(len(poses)):
-        obj_id = poses[i_pose]['obj_id']
-        i_mesh = meshes_labels_list.index(obj_id) - 1   # get the index of the corresponding mesh stored in meshes
-
-        mesh = deepcopy(meshes[i_mesh])
-
-        R_mat = np.array(poses[i_pose]['cam_R_m2c'])
-        T_mat = poses[i_pose]['cam_t_m2c']
-
-        R_mat = np.reshape(R_mat, (3, 3))
-        homog_term = np.array([[T_mat[0]], [T_mat[1]], [T_mat[2]]])
-        pose = np.concatenate((R_mat, homog_term), axis=1)
-        homog_term = np.array([[0., 0., 0., 1.]])
-        pose = np.concatenate((pose, homog_term), axis=0)
-
-        mesh = mesh.transform(pose)
-
-        meshes_list.append(mesh)
-        transed_labels_list.append(i_mesh + 1)
-
-    return meshes_list, transed_labels_list
-
-def add_table_mesh(meshes_list, trans=np.array([None])):
+def add_table_mesh(meshes_list, trans=np.array([None]), scale=1.):
     table_mesh = o3d.geometry.TriangleMesh()
 
     '''
@@ -79,10 +25,10 @@ def add_table_mesh(meshes_list, trans=np.array([None])):
     |    2   3
     ----->x
     '''
-    vertices = np.array([[-720., 720., 0.],
-                         [720., 720., 0.],
-                         [-720., -720., 0.],
-                         [720., -720., 0.]])
+    vertices = np.array([[-scale, scale, 0.],
+                         [scale, scale, 0.],
+                         [-scale, -scale, 0.],
+                         [scale, -scale, 0.]])
     vertex_colors = np.array([[0., 0.447, 0.451],
                               [0., 0.447, 0.451],
                               [0., 0.447, 0.451],
@@ -173,7 +119,7 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
         vis.poll_events()
         vis.capture_screen_image(label_name, do_render=False)
 
-def scene_render(meshes_path, meshes_name, scene_path, output_path='Data/', depth_scale=1000, is_table=True, is_offscreen=False):
+def scene_render_linemod(meshes_path, meshes_name, scene_path, output_path='Data/', depth_scale=1000, is_table=True, is_offscreen=False):
     poses_path = scene_path + 'gt.yml'
     intrinsic_path = scene_path + 'info.yml'
     
@@ -197,7 +143,7 @@ def scene_render(meshes_path, meshes_name, scene_path, output_path='Data/', dept
         meshes_labels_list.append(int(idx_mesh))
 
     if is_table:
-        meshes = add_table_mesh(meshes)
+        meshes = add_table_mesh(meshes, scale=720.)
 
     with open(intrinsic_path, 'r') as intrinsic_yaml:
         intrinsics = yaml.safe_load(intrinsic_yaml)
@@ -226,19 +172,60 @@ def scene_render(meshes_path, meshes_name, scene_path, output_path='Data/', dept
     for i_img in tqdm(range(num_frames)):
         poses = poses_dict[i_img]
 
-        # if is_table:
-        #     if not len(poses) == len(meshes) - 1:
-        #         continue
-        # else:
-        #     if not len(poses) == len(meshes):
-        #         continue
-
-        meshes_transed, meshes_transed_labels_list = meshes_place(meshes, meshes_labels_list, poses, is_table)
+        meshes_transed, meshes_transed_labels_list = mesh_utils.place_meshes_linemod(meshes, meshes_labels_list, poses, is_table)
 
         output_name = output_path + str(i_img)
         # mesh_utils.write_meshes(output_name + '.obj', meshes_transed)
         depth_render(meshes_transed, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
         label_render(meshes_transed, meshes_transed_labels_list, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
+
+def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Data/', camera='kinect', depth_scale=1000, is_table=True, is_offscreen=False):
+    poses_paths = os.listdir(scene_path + 'meta/')
+    cam_pos = np.load(scene_path + 'cam0_wrt_table.npy')
+    extrinsic_mat = np.linalg.inv(cam_pos).tolist()
+    cam_trans_poses = np.load(scene_path + 'camera_poses.npy')
+
+    if is_table:
+        cam_param = vis_utils.get_type_camera_parameters(extrinsic_mat, camera=camera)
+    else:
+        cam_param = vis_utils.get_type_camera_parameters(camera=camera)
+
+    print('Scene: %s, number of images: %d'%(scene_path, len(poses_paths)))
+
+    meshes_transed = []
+    meshes_labels_list = []
+    # for i_img in tqdm(range(len(poses_paths))):
+    for i_img in range(len(poses_paths)):
+        meshes = []
+        pose_idx = poses_paths[i_img].split('.')[0]
+        pose_path = scene_path + 'meta/' + poses_paths[i_img]
+        mat = sio.loadmat(pose_path)
+        poses = mat['poses']
+
+        num_meshes = poses.shape[2]
+        
+        idx_meshes = mat['cls_indexes']
+        for i_mesh in range(num_meshes):
+            idx_mesh = str(idx_meshes[0][i_mesh] - 1).zfill(3)
+            mesh_path = meshes_path + idx_mesh + '/' + meshes_name
+            mesh = mesh_utils.load_mesh(mesh_path)
+            meshes.append(mesh)
+            if i_img == 0:
+                meshes_labels_list.append(int(idx_mesh) + 1)
+        
+        if is_table:
+            meshes_transed = mesh_utils.place_meshes_graspnet(meshes, poses, cam_pos)
+            meshes_transed = add_table_mesh(meshes_transed)
+            break
+        else:
+            meshes_transed = mesh_utils.place_meshes_graspnet(meshes, poses)
+
+        # o3d.visualization.draw_geometries(meshes_list)
+        output_name = output_path + pose_idx
+        depth_render(meshes_transed, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
+        label_render(meshes_transed, meshes_labels_list, cam_param, output_name=output_name, depth_scale=depth_scale, is_offscreen=is_offscreen)
+
+        print('    Image: %d, number of meshes: %d'%(i_img, num_meshes))
 
 def data_generation(opt):
     scene_list = os.listdir(opt.root_path)
@@ -248,25 +235,15 @@ def data_generation(opt):
         scene_path = opt.root_path + scene_list[i_scene] + '/'
         output_path = opt.output_path + scene_list[i_scene] + '/'
         if not os.path.exists(output_path):
-            utils.mkdirs(output_path)
-        scene_render(opt.meshes_path, opt.meshes_name, scene_path, output_path, opt.depth_scale, opt.is_table, opt.is_offscreen)
-
+            os.makedirs(output_path)
+        if opt.dataset == 'linemod':
+            scene_render_linemod(opt.meshes_path, opt.meshes_name, scene_path, output_path, opt.depth_scale, opt.is_table, opt.is_offscreen)
+        elif opt.dataset == 'graspnet':
+            scene_render_graspnet(opt.meshes_path, opt.meshes_name, scene_path, output_path, opt.camera, opt.depth_scale, opt.is_table, opt.is_offscreen)
 if __name__ == '__main__':
     opt = SceneRenderOptions().parse()
 
     # test scene render
-    scene_render(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path, depth_scale=opt.depth_scale, is_table=opt.is_table)
-
-    # test visualization
-    # real_depth = cv2.imread('Data/s0_0_k.png', 2)
-    # maxx = np.max(real_depth)
-    # real_depth = real_depth / maxx
-    # cv2.imshow('00', real_depth)
-    # cv2.waitKey(0)
-
-    # real_depth = cv2.imread('Data/depth.png', 2)
-    # real_depth = real_depth / maxx
-    # cv2.imshow('01', real_depth)
-    # cv2.waitKey(0)
+    scene_render_linemod(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path, depth_scale=opt.depth_scale, is_table=opt.is_table)
 
     # data_generation(opt)

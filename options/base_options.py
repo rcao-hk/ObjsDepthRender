@@ -23,6 +23,7 @@ class BaseOptions():
         parser.add_argument('--logs_dir', type=str, default='./logs', help='the path to save Logs')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
 
+        parser.add_argument('--dataset', type=str, default='linemod', help='name of datase, linemod or graspnet')
         parser.add_argument('--camera', type=str, default='realsense', help='type of camera, kinect or realsense')
         parser.add_argument('--depth_scale', type=int, default=1, help='depth scale of camera')
 
