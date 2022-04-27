@@ -10,7 +10,7 @@ from matplotlib import cm
 import open3d as o3d
 
 from options.depth_operator_options import DepthOperatorOptions
-from utils import utils, vis_utils
+from utils import vis_utils
 
 def color_mapping(depth):
     cmap = cm.get_cmap('jet', 256)
@@ -140,7 +140,7 @@ def get_object_pointclouds(scene_path, output_path='Data/', camera='kinect', dep
             # o3d.visualization.draw_geometries([point_cloud])
             point_cloud_write_path = output_path + 'model_pc/'
             if not os.path.exists(point_cloud_write_path):
-                utils.mkdirs(point_cloud_write_path)
+                os.makedirs(point_cloud_write_path)
             if is_synthetic:
                 point_cloud_write_name = point_cloud_write_path + str(i_img).zfill(4) + '_' + str(i_label).zfill(3) + '_syn.xyz' 
             else:
@@ -150,11 +150,11 @@ def get_object_pointclouds(scene_path, output_path='Data/', camera='kinect', dep
 if __name__ == '__main__':
     opt = DepthOperatorOptions().parse()
 
-    depth_scan = cv2.imread('Data/s0_0_k.png', 2)
-    depth_render = cv2.imread('Data/depth_kinect.png', 2)
+    depth_scan = cv2.imread('Data/graspreal/0000_depth.png', 2)
+    depth_render = cv2.imread('Data/graspsyn/0000_depth.png', 2)
 
     # get_paried_pointcloud('Data/s0_0_k.png', 'Data/depth_kinect.png', opt.one_scene_path, opt.camera, opt.depth_scale)
-    # paired_depth_colorization(depth_scan, depth_render)
+    paired_depth_colorization(depth_scan, depth_render)
     # get_object_pointclouds(opt.one_scene_path_synthetic, is_synthetic=True)
     
-    registrate_paried_pointcloud('Data/s0_0_r.png', 'Data/depth_realsense.png', 'E:/Datasets/GraspNet/TrainImages/scene_0000/realsense/', 'realsense', opt.depth_scale)
+    # registrate_paried_pointcloud('Data/s0_0_r.png', 'Data/depth_realsense.png', 'E:/Datasets/GraspNet/TrainImages/scene_0000/realsense/', 'realsense', opt.depth_scale)

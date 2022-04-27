@@ -1,6 +1,8 @@
 # ObjsDepthRender
 Render synthetic depth maps for [preprocessed LineMOD](https://drive.google.com/drive/folders/19ivHpaKm9dOrr12fzC8IDFczWRPFxho7) and [GraspNet](https://graspnet.net/) datasets.
 
+<img src="objsdepthrender.png" width="800px"/>
+
 ## Prerequisites
 
 - Windows or Ubuntu Desktop (Offscreen rendering is waiting for update...)

@@ -1,6 +1,5 @@
 import argparse
 import os
-from utils import utils
 
 class BaseOptions():
     """This class defines options used during both training and test time.
@@ -78,7 +77,7 @@ class BaseOptions():
         # save to the disk
         expr_dir = os.path.join(opt.logs_dir, opt.name)
         if not os.path.exists(expr_dir):
-            utils.mkdirs(expr_dir)
+            os.makedirs(expr_dir)
         file_name = os.path.join(expr_dir, '{}_opt.txt'.format(opt.phase))
         try:
             with open(file_name, 'wt') as opt_file:
