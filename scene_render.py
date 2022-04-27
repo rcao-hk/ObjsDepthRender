@@ -260,7 +260,7 @@ if __name__ == '__main__':
     opt = SceneRenderOptions().parse()
 
     # test scene render
-    scene_render_linemod(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path,
-                        depth_scale=opt.depth_scale, is_table=opt.is_table)
+    # scene_render_linemod(opt.meshes_path, opt.meshes_name, opt.one_scene_path, output_path=opt.output_path,
+    #                     depth_scale=opt.depth_scale, is_table=opt.is_table)
 
-    # data_generation(opt)
+    data_generation(opt)
