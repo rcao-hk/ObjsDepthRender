@@ -5,8 +5,6 @@ from copy import deepcopy
 import numpy as np
 import scipy.io as sio
 
-import cv2
-from PIL import Image
 import open3d as o3d
 
 from tqdm import tqdm
@@ -97,12 +95,15 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
         vis = o3d.visualization.rendering.OffscreenRenderer(width=width, height=height)
         vis.setup_camera(cam_param.intrinsic, cam_param.extrinsic)
         vis.scene.set_lighting(o3d.visualization.rendering.Open3DScene.LightingProfile.NO_SHADOWS, np.array([0, 0, -1]))
+        vis.scene.view.set_post_processing(False)
     else:
         vis = o3d.visualization.Visualizer()
         vis.create_window(width=width, height=height, visible=False)
         ctr = vis.get_view_control()
 
     material = o3d.visualization.rendering.MaterialRecord()
+    material.shader = "defaultUnlit"
+
     for i_mesh in range(len(meshes_labels_list)):
         mesh = meshes_list[i_mesh]
         vertices = np.asarray(mesh.vertices)
@@ -113,6 +114,9 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
         label_color = np.ones((num_vertices, 3))
         label_color = label_color * mesh_label * 3 / 255.
         mesh_copy.vertex_colors = o3d.utility.Vector3dVector(label_color)
+        # label_color = np.ones((3,))
+        # label_color = label_color * mesh_label * 3 / 255.
+        # mesh_copy.paint_uniform_color(label_color)
         if is_offscreen:
             vis.scene.add_geometry('model_' + str(i_mesh), mesh_copy, material)
         else:
@@ -218,8 +222,9 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
         mat = sio.loadmat(pose_path)
         poses = mat['poses']
         intrinsics = mat['intrinsic_matrix']
-        # cam_param.intrinsic.set_intrinsics(output_width, output_height,
-        #                                    intrinsics[0][0], intrinsics[1][1], intrinsics[0][2], intrinsics[1][2])
+        cam_param.intrinsic.set_intrinsics(output_width, output_height,
+                                           intrinsics[0][0], intrinsics[1][1], intrinsics[0][2], intrinsics[1][2])
+        cam_param.extrinsic = np.linalg.inv(np.matmul(cam_pos, cam_trans_poses[i_img])).tolist()
         num_meshes = poses.shape[2]
         
         idx_meshes = mat['cls_indexes']
@@ -232,14 +237,14 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
                 meshes_labels_list.append(int(idx_mesh) + 1)
         
         if is_table:
-            meshes_transed = mesh_utils.place_meshes_graspnet(meshes, poses, cam_pos)
+            meshes_transed = mesh_utils.place_meshes_graspnet(meshes, poses, np.matmul(cam_pos, cam_trans_poses[i_img]))
+            # meshes_transed = add_table_mesh(meshes_transed, trans=np.matmul(cam_pos, cam_trans_poses[i_img]))
             meshes_transed = add_table_mesh(meshes_transed)
-            # break
         else:
             meshes_transed = mesh_utils.place_meshes_graspnet(meshes, poses)
 
-        # o3d.visualization.draw_geometries(meshes_list)
-        output_name = output_path + pose_idx
+        # o3d.visualization.draw_geometries(meshes_transed)
+        output_name = os.path.join(output_path, pose_idx)
         depth_render(meshes_transed, cam_param, output_name=output_name,
                     depth_scale=depth_scale, width=output_width, height=output_height, is_offscreen=is_offscreen)
         label_render(meshes_transed, meshes_labels_list, cam_param, output_name=output_name,
@@ -249,11 +254,14 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
 
 def data_generation(opt):
     scene_list = os.listdir(opt.root_path)
-
+    scene_list = sorted(scene_list, key=lambda x:int(x.split('_')[-1]))
+    scene_list = scene_list[75:100]
+    print(scene_list)
+    
     # linear processing
     for i_scene in range(len(scene_list)):
-        scene_path = opt.root_path + scene_list[i_scene] + '/'
-        output_path = opt.output_path + scene_list[i_scene] + '/'
+        scene_path = os.path.join(opt.root_path, scene_list[i_scene])
+        output_path = os.path.join(opt.output_path, scene_list[i_scene], opt.camera)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         if opt.dataset == 'linemod':
