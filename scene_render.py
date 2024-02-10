@@ -112,7 +112,7 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
 
         mesh_label = meshes_labels_list[i_mesh]
         label_color = np.ones((num_vertices, 3))
-        label_color = label_color * mesh_label * 3 / 255.
+        label_color = label_color * mesh_label / 255.
         mesh_copy.vertex_colors = o3d.utility.Vector3dVector(label_color)
         # label_color = np.ones((3,))
         # label_color = label_color * mesh_label * 3 / 255.
@@ -125,7 +125,11 @@ def label_render(meshes_list, meshes_labels_list, cam_param, output_name='Data/t
     label_name = output_name + '_label.png'
     if is_offscreen:
         rgb_image = vis.render_to_image()
-        o3d.io.write_image(label_name, rgb_image)
+        rgb_image_np = np.asarray(rgb_image)
+        rgb_image_np = rgb_image_np[:, :, 0]
+        rgb_image_np[rgb_image_np == 255] = 0
+        cv2.imwrite(label_name, rgb_image_np)
+        # o3d.io.write_image(label_name, rgb_image)
     else:
         ctr.convert_from_pinhole_camera_parameters(cam_param)
         ctr.set_constant_z_far(3000)
@@ -201,6 +205,7 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
                         depth_scale=1000, output_width=1280, output_height=720,
                         is_table=True, is_offscreen=False):
     poses_paths = os.listdir(os.path.join(scene_path, camera, 'meta'))
+    poses_paths = sorted(poses_paths, key=lambda x: int(x.split('.')[0]))
     cam_pos = np.load(os.path.join(scene_path, camera, 'cam0_wrt_table.npy'))
     extrinsic_mat = np.linalg.inv(cam_pos).tolist()
     cam_trans_poses = np.load(os.path.join(scene_path, camera, 'camera_poses.npy'))
@@ -255,7 +260,7 @@ def scene_render_graspnet(meshes_path, meshes_name, scene_path, output_path='Dat
 def data_generation(opt):
     scene_list = os.listdir(opt.root_path)
     scene_list = sorted(scene_list, key=lambda x:int(x.split('_')[-1]))
-    scene_list = scene_list[75:100]
+    scene_list = scene_list[180:190]
     print(scene_list)
     
     # linear processing

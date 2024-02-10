@@ -28,8 +28,8 @@ class BaseOptions():
         parser.add_argument('--output_width', type=int, default=1280, help='640 for linemod and 1280 for graspnet')
         parser.add_argument('--output_height', type=int, default=720, help='480 for linemod and 720 for graspnet')
 
-        parser.add_argument('--root_path', type=str, default='/media/rcao/Data/Dataset/graspnet/scenes/', help='path to the root folder')
-        parser.add_argument('--output_path', type=str, default='test/', help='path to the output folder')
+        parser.add_argument('--root_path', type=str, default='/media/8TB/rcao/dataset/graspnet/scenes/', help='path to the root folder')
+        parser.add_argument('--output_path', type=str, default='/media/8TB/rcao/dataset/graspnet/virtual_scenes/', help='path to the output folder')
 
         self.initialized = True
         return parser
