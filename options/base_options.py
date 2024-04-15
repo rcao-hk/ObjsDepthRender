@@ -23,13 +23,13 @@ class BaseOptions():
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
 
         parser.add_argument('--dataset', type=str, default='graspnet', help='name of datase, linemod or graspnet')
-        parser.add_argument('--camera', type=str, default='kinect', help='type of camera, kinect or realsense')
+        parser.add_argument('--camera', type=str, default='realsense', help='type of camera, kinect or realsense')
         parser.add_argument('--depth_scale', type=int, default=1000, help='depth scale of camera')
         parser.add_argument('--output_width', type=int, default=1280, help='640 for linemod and 1280 for graspnet')
         parser.add_argument('--output_height', type=int, default=720, help='480 for linemod and 720 for graspnet')
 
-        parser.add_argument('--root_path', type=str, default='/media/gpuadmin/rcao/dataset/graspnet/scenes/', help='path to the root folder')
-        parser.add_argument('--output_path', type=str, default='/media/gpuadmin/rcao/dataset/graspnet/visib_info/', help='path to the output folder')
+        parser.add_argument('--root_path', type=str, default='/home/user/dataset/graspnet/scenes/', help='path to the root folder')
+        parser.add_argument('--output_path', type=str, default='/home/user/dataset/graspnet/virtual_scenes/', help='path to the output folder')
 
         self.initialized = True
         return parser
