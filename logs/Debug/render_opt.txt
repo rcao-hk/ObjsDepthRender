@@ -1,18 +1,18 @@
 ----------------- Options ---------------
-                   camera: realsense                     
+                   camera: kinect                        
                   dataset: graspnet                      
               depth_scale: 1000                          
              is_offscreen: True                          
                  is_table: True                          
                  logs_dir: ./logs                        
               meshes_name: nontextured.ply               
-              meshes_path: /home/user/dataset/graspnet/models/
+              meshes_path: /media/gpuadmin/rcao/dataset/graspnet/models/
                      name: Debug                         
            one_scene_path: E:/Datasets/LineMod/Linemod_preprocessed/data/02/
             output_height: 720                           
-              output_path: /home/user/dataset/graspnet/virtual_scenes/
+              output_path: /media/gpuadmin/rcao/dataset/graspnet/virtual_scenes/
              output_width: 1280                          
                     phase: render                        
-                root_path: /home/user/dataset/graspnet/scenes/
+                root_path: /media/gpuadmin/rcao/dataset/graspnet/scenes/
                    suffix:                               
 ----------------- End -------------------

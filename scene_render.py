@@ -216,6 +216,6 @@ def parallel_generate(scene_ids, cfgs, proc = 2):
     
 if __name__ == '__main__':
     opt = SceneRenderOptions().parse()
-    parallel_generate(list(range(130)), cfgs=opt, proc = 30)
+    parallel_generate(list(range(130)), cfgs=opt, proc = 10)
     
     # data_generation(opt)
